@@ -56,3 +56,62 @@ cp config.py
 
 ### 4.运行
 python main.py
+
+实验数据
+在 Olist 巴西电商数据集（10 万+ 行）上验证效果。
+
+实验1：三表 JOIN（小结果集）
+查询：找出某州客户的订单并汇总金额。
+
+指标	优化前	优化后
+type	ALL, ALL, ALL	ref, ref, ref
+key	NULL	idx_*
+扫描行数	30 万	83
+耗时	0.18 秒	0.015 秒
+优化方法：给 JOIN 关联列分别加索引。
+
+实验2：范围查询（大范围 vs 小范围）
+查询：WHERE order_purchase_timestamp BETWEEN ... AND order_status='delivered'
+
+大范围（返回 4.3 万行，占全表 44%）：
+
+指标	优化前	优化后
+type	ALL	ALL（优化器放弃索引）
+耗时	0.43 秒	0.38 秒
+小范围（返回 686 行，占全表 0.7%）：
+
+指标	优化前	优化后
+type	ALL	range
+key	NULL	idx_purchase_time_status
+扫描行数	9.8 万	730
+耗时	0.12 秒	0.011 秒
+结论：索引是否被使用取决于返回行数占全表的比例。返回行数占比高时，
+MySQL 优化器判断回表成本大于全表扫描，主动放弃索引。
+
+技术要点
+performance_schema：MySQL 自带监控库，按 SQL 模板（digest）聚合统计
+
+EXPLAIN：查看 MySQL 的执行计划，关键字段 type/key/rows/Extra
+
+B+树索引：MySQL 索引的底层结构，支持快速等值查找和范围查找
+
+联合索引：范围列在前、等值列在后，符合最左前缀原则
+
+覆盖索引：查询列全在索引里，不需要回表
+
+优化器成本计算：MySQL 根据返回行数占比决定是否使用索引
+
+已知限制
+索引建议只处理等值查询，不支持范围查询和 IN
+
+参数替换用 1 可能类型不匹配
+
+只支持单表分析，多表 JOIN 的索引建议较简单
+
+后续计划
+□ 支持范围查询的索引建议
+□ 从慢查询日志补充原始参数
+□ 加入 HTML 报告输出
+
+License
+MIT
