@@ -1,0 +1,101 @@
+# 实验数据与结论
+
+## 数据集
+
+Olist 巴西电商数据集（Kaggle），导入后各表行数：
+
+| 表 | 行数 |
+|---|---|
+| orders | 99441 |
+| order_items | 112650 |
+| customers | 99441 |
+| products | 32951 |
+| sellers | 3095 |
+
+## 实验1：三表 JOIN
+
+**查询**：找出某州客户的订单并汇总金额。
+
+**测试条件**：州 = AC（小州，约 81 行结果）。
+
+**优化前**：
+table=c, type=ALL, key=None, rows=98893
+table=o, type=ALL, key=None, rows=98150
+table=oi, type=ALL, key=None, rows=111517
+返回行数: 81
+耗时: 0.1799 秒
+
+
+**优化方法**：
+
+```sql
+CREATE INDEX idx_customer_state ON customers(customer_state);
+CREATE INDEX idx_order_customer ON orders(customer_id);
+CREATE INDEX idx_item_order ON order_items(order_id);
+
+**优化后**：
+table=c,  type=ref, key=idx_customer_state, rows=81
+table=o,  type=ref, key=idx_order_customer, rows=1
+table=oi, type=ref, key=idx_item_order, rows=1
+返回行数: 81
+耗时: 0.015 秒
+
+结论：
+
+扫描行数：30 万 → 83，降 3600 倍
+
+耗时：0.18 秒 → 0.015 秒，降 12 倍
+
+扫描行数和耗时不呈线性关系，因为走索引有固定开销（B+树查找、回表）
+
+
+实验2：范围查询
+查询：
+
+sql
+SELECT * FROM orders
+WHERE order_purchase_timestamp BETWEEN ... AND order_status='delivered'
+索引：
+
+sql
+CREATE INDEX idx_purchase_time_status 
+ON orders(order_purchase_timestamp, order_status);
+大范围（2017年全年）
+返回 43357 行，占全表 44%。
+
+指标	走索引	强制全扫
+type	ALL	ALL
+key	idx_purchase_time_status	NULL
+耗时	0.38 秒	0.43 秒
+发现：加了索引但 MySQL 主动放弃使用。
+
+小范围（2017年1月）
+返回 686 行，占全表 0.7%。
+
+指标	走索引	强制全扫
+type	range	ALL
+key	idx_purchase_time_status	NULL
+扫描行数	730	98271
+耗时	0.011 秒	0.12 秒
+结论：
+
+索引是否被使用取决于返回行数占全表的比例：
+
+占比 < 20%：MySQL 走索引
+
+占比 > 30%：MySQL 可能选择全表扫描
+
+原因：走索引意味着回表（随机 IO），全表扫描是顺序 IO。返回行数占比高时，
+回表的总成本大于顺序全表扫。
+
+核心结论
+索引优化的是数据检索，不优化数据计算。GROUP BY、ORDER BY、SUM
+的开销不因索引而减少。
+
+扫描行数和耗时不呈线性关系。全表扫 30 万行可能只要 0.18 秒，
+走索引 83 行可能也要 0.015 秒。
+
+优化器会做成本计算。有索引不等于一定走索引。
+
+联合索引的列顺序很重要。范围列在前，等值列在后。
+
