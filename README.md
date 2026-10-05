@@ -20,24 +20,15 @@ MySQL 慢查询是后端性能问题的主要来源。手动分析需要：
 - 输出 Markdown 格式报告
 
 ## 项目结构
-.
-├── config.example.py # 配置模板
-├── config.py # 真实配置（不提交，含密码）
-├── collector.py # 采集模块
-├── analyzer.py # 分析模块
-├── reporter.py # 报告模块
-├── main.py # 入口
-├── requirements.txt # 依赖清单
-├── scripts/ # 实验脚本
-│ ├── import_olist.py # 数据导入
-│ ├── exp1_join.py # 实验1：三表 JOIN
-│ └── exp2_range.py # 实验2：范围查询
-├── reports/
-│ └── sample_report.md # 示例报告
-└── docs/
-└── experiments.md # 实验数据与结论
 
-text
+config.py # 配置模板
+collector.py # 采集模块
+analyzer.py # 分析模块
+reporter.py # 报告模块
+main.py # 入口
+requirements.txt # 依赖清单
+experiments.md # 实验数据与结论
+
 
 ## 快速开始
 
@@ -49,21 +40,15 @@ text
 ### 2. 安装依赖
 pip install -r requirements.txt
 
-text
-
 ### 3. 配置
 
 复制配置模板并填入你的 MySQL 密码：
 cp config.example.py config.py
 
-text
-
 然后编辑 config.py，填入 MySQL 密码和数据库名。
 
 ### 4. 运行
 python main.py
-
-text
 
 生成的报告在 report.md。
 
@@ -89,8 +74,6 @@ text
 查询：
 SELECT * FROM orders
 WHERE order_purchase_timestamp BETWEEN ... AND order_status='delivered'
-
-text
 
 大范围（2017年全年，返回 4.3 万行，占全表 44%）：
 
