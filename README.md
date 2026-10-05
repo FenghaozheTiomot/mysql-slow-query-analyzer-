@@ -23,20 +23,6 @@ MySQL 慢查询是后端性能问题的主要来源。手动分析需要：
 - 自动生成索引建议（基于 WHERE 子句提取列）
 - 输出 Markdown 格式报告
 
-## 项目结构
-├── config.example.py # 配置模板
-├── collector.py # 采集模块
-├── analyzer.py # 分析模块
-├── reporter.py # 报告模块
-├── main.py # 入口
-├── scripts/ # 实验脚本
-│ ├── import_olist.py
-│ ├── exp1_join.py
-│ └── exp2_range.py
-└── docs/
-└── experiments.md # 实验数据
-
-
 ## 快速开始
 
 ### 1. 环境要求
