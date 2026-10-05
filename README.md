@@ -48,6 +48,7 @@ MySQL 慢查询是后端性能问题的主要来源。手动分析需要：
 
 ```bash
 pip install -r requirements.txt
+```
 
 ### 3.快速开始
 
